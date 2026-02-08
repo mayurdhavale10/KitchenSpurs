@@ -23,6 +23,7 @@ export default function Home() {
   const [selected, setSelected] = useState<Restaurant | null>(null);
   const [trends, setTrends] = useState<any>(null);
   const [top, setTop] = useState<any[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
 
   // filters
   const [search, setSearch] = useState("");
@@ -135,66 +136,122 @@ export default function Home() {
       <div className="max-w-7xl mx-auto p-8">
         {/* Filters Section */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4 text-black">Filters</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            <input
-              className="border border-gray-300 rounded px-4 py-2 text-black"
-              placeholder="Search"
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <input
-              className="border border-gray-300 rounded px-4 py-2 text-black"
-              placeholder="Cuisine"
-              onChange={(e) => setCuisine(e.target.value)}
-            />
-            <input
-              className="border border-gray-300 rounded px-4 py-2 text-black"
-              placeholder="Location"
-              onChange={(e) => setLocation(e.target.value)}
-            />
-            <input
-              type="number"
-              className="border border-gray-300 rounded px-4 py-2 text-black"
-              placeholder="Min ₹"
-              onChange={(e) => setMinAmount(e.target.value)}
-            />
-            <input
-              type="number"
-              className="border border-gray-300 rounded px-4 py-2 text-black"
-              placeholder="Max ₹"
-              onChange={(e) => setMaxAmount(e.target.value)}
-            />
-            <input
-              type="number"
-              className="border border-gray-300 rounded px-4 py-2 text-black"
-              placeholder="Start Hr"
-              onChange={(e) => setStartHour(e.target.value)}
-            />
-            <input
-              type="number"
-              className="border border-gray-300 rounded px-4 py-2 text-black"
-              placeholder="End Hr"
-              onChange={(e) => setEndHour(e.target.value)}
-            />
-            <input
-              type="date"
-              className="border border-gray-300 rounded px-4 py-2 text-black"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-            />
-            <input
-              type="date"
-              className="border border-gray-300 rounded px-4 py-2 text-black"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-            />
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold text-black">Filters</h2>
             <button
-              onClick={loadAnalytics}
-              className="bg-black text-white rounded px-6 py-2 hover:bg-gray-800 transition-colors"
+              onClick={() => setShowFilters(!showFilters)}
+              className="text-black hover:text-gray-700 underline focus:outline-none"
             >
-              Apply
+              {showFilters ? "Hide Filters" : "Show Filters"}
             </button>
           </div>
+
+          {showFilters && (
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 transition-all duration-300">
+              <div className="flex flex-col">
+                <label className="text-xs text-gray-500 mb-1">Search</label>
+                <input
+                  className="border border-gray-300 rounded px-4 py-2 text-black"
+                  placeholder="Restaurant Name..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+
+              <div className="flex flex-col">
+                <label className="text-xs text-gray-500 mb-1">Cuisine</label>
+                <input
+                  className="border border-gray-300 rounded px-4 py-2 text-black"
+                  placeholder="Italian, Indian..."
+                  value={cuisine}
+                  onChange={(e) => setCuisine(e.target.value)}
+                />
+              </div>
+
+              <div className="flex flex-col">
+                <label className="text-xs text-gray-500 mb-1">Location</label>
+                <input
+                  className="border border-gray-300 rounded px-4 py-2 text-black"
+                  placeholder="New York, Mumbai..."
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                />
+              </div>
+
+              <div className="flex flex-col">
+                <label className="text-xs text-gray-500 mb-1">Min Order (₹)</label>
+                <input
+                  type="number"
+                  className="border border-gray-300 rounded px-4 py-2 text-black"
+                  placeholder="0"
+                  value={minAmount}
+                  onChange={(e) => setMinAmount(e.target.value)}
+                />
+              </div>
+
+              <div className="flex flex-col">
+                <label className="text-xs text-gray-500 mb-1">Max Order (₹)</label>
+                <input
+                  type="number"
+                  className="border border-gray-300 rounded px-4 py-2 text-black"
+                  placeholder="10000"
+                  value={maxAmount}
+                  onChange={(e) => setMaxAmount(e.target.value)}
+                />
+              </div>
+
+              <div className="flex flex-col">
+                <label className="text-xs text-gray-500 mb-1">Start Hour</label>
+                <input
+                  type="number"
+                  className="border border-gray-300 rounded px-4 py-2 text-black"
+                  placeholder="0-24"
+                  value={startHour}
+                  onChange={(e) => setStartHour(e.target.value)}
+                />
+              </div>
+
+              <div className="flex flex-col">
+                <label className="text-xs text-gray-500 mb-1">End Hour</label>
+                <input
+                  type="number"
+                  className="border border-gray-300 rounded px-4 py-2 text-black"
+                  placeholder="0-24"
+                  value={endHour}
+                  onChange={(e) => setEndHour(e.target.value)}
+                />
+              </div>
+
+              <div className="flex flex-col">
+                <label className="text-xs text-gray-500 mb-1">From Date</label>
+                <input
+                  type="date"
+                  className="border border-gray-300 rounded px-4 py-2 text-black"
+                  value={from}
+                  onChange={(e) => setFrom(e.target.value)}
+                />
+              </div>
+
+              <div className="flex flex-col">
+                <label className="text-xs text-gray-500 mb-1">To Date</label>
+                <input
+                  type="date"
+                  className="border border-gray-300 rounded px-4 py-2 text-black"
+                  value={to}
+                  onChange={(e) => setTo(e.target.value)}
+                />
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  onClick={loadAnalytics}
+                  className="w-full bg-black text-white rounded px-6 py-2 hover:bg-gray-800 transition-colors h-[42px]"
+                >
+                  Apply Filters
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Restaurants */}
