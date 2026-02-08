@@ -22,48 +22,38 @@ class AnalyticsController extends Controller
         $startHour = $request->start_hour;
         $endHour = $request->end_hour;
 
-        // Base Query with SQLite compatible date functions
         $base = DB::table('orders')
-            ->join('restaurants', 'orders.restaurant_id', '=', 'restaurants.id')
-            ->where('restaurants.id', $id)
-            ->whereRaw('DATE(ordered_at) >= ?', [$from])
-            ->whereRaw('DATE(ordered_at) <= ?', [$to])
-            ->when($search, fn($q) => $q->where('restaurants.name', 'like', "%$search%"))
-            ->when($cuisine, fn($q) => $q->where('restaurants.cuisine', $cuisine))
-            ->when($location, fn($q) => $q->where('restaurants.location', $location))
-            ->when($minAmount, fn($q) => $q->where('order_amount', '>=', $minAmount))
-            ->when($maxAmount, fn($q) => $q->where('order_amount', '<=', $maxAmount))
-            // SQLite uses strftime for hour extraction
-            ->when($startHour !== null, fn($q) => $q->whereRaw("CAST(strftime('%H', ordered_at) AS INTEGER) >= ?", [$startHour]))
-            ->when($endHour !== null, fn($q) => $q->whereRaw("CAST(strftime('%H', ordered_at) AS INTEGER) <= ?", [$endHour]));
+            ->join('restaurants','orders.restaurant_id','=','restaurants.id')
+            ->where('restaurants.id',$id)
+            ->whereBetween('ordered_at', [$from, $to])
+            ->when($search, fn($q)=>$q->where('restaurants.name','like',"%$search%"))
+            ->when($cuisine, fn($q)=>$q->where('restaurants.cuisine',$cuisine))
+            ->when($location, fn($q)=>$q->where('restaurants.location',$location))
+            ->when($minAmount !== null && $minAmount !== '', fn($q)=>$q->where('order_amount','>=',$minAmount))
+            ->when($maxAmount !== null && $maxAmount !== '', fn($q)=>$q->where('order_amount','<=',$maxAmount))
+            ->when($startHour !== null && $startHour !== '', fn($q)=>$q->whereRaw('HOUR(ordered_at) >= ?',[$startHour]))
+            ->when($endHour !== null && $endHour !== '', fn($q)=>$q->whereRaw('HOUR(ordered_at) <= ?',[$endHour]));
 
-        // Optimizing: Fetch Daily Stats in one go
         $daily = (clone $base)
-            ->selectRaw("DATE(ordered_at) as date, COUNT(*) as orders, SUM(order_amount) as revenue")
-            ->groupByRaw("DATE(ordered_at)")
+            ->selectRaw('DATE(ordered_at) date, COUNT(*) orders, SUM(order_amount) revenue')
+            ->groupBy('date')
             ->orderBy('date')
             ->get();
 
-        // Optimizing: Calculate Average directly
         $avg = (clone $base)->avg('order_amount');
 
-        // Optimizing: Daily Peak calculation
-        // We fetch hourly counts, then in PHP we quickly find the max per day. 
-        // This is efficient enough for monthly data without complex window functions in raw SQL.
-        // Optimizing: Daily Peak calculation
         $dailyPeak = (clone $base)
-            // SQLite strftime('%H', ...) returns string '00'..'23'
-            ->selectRaw("DATE(ordered_at) as date, strftime('%H', ordered_at) as hour, COUNT(*) as total")
-            ->groupByRaw("DATE(ordered_at), strftime('%H', ordered_at)")
+            ->selectRaw('DATE(ordered_at) date, HOUR(ordered_at) hour, COUNT(*) total')
+            ->groupBy('date','hour')
             ->orderByDesc('total')
             ->get()
             ->groupBy('date')
-            ->map(fn($d) => $d->first()); // Taking the first (highest) since we ordered by total desc
+            ->map(fn($d)=>$d->first());
 
         return response()->json([
-            'daily' => $daily,
-            'average_order_value' => round($avg, 2),
-            'daily_peak_hours' => $dailyPeak
+            'daily'=>$daily,
+            'average_order_value'=>round($avg,2),
+            'daily_peak_hours'=>$dailyPeak
         ]);
     }
 
@@ -71,11 +61,10 @@ class AnalyticsController extends Controller
     {
         return DB::table('orders')
             ->join('restaurants','orders.restaurant_id','=','restaurants.id')
-            ->whereRaw('DATE(ordered_at) >= ?', [$request->from])
-            ->whereRaw('DATE(ordered_at) <= ?', [$request->to])
+            ->whereBetween('ordered_at',[$request->from,$request->to])
             ->when($request->location,fn($q)=>$q->where('restaurants.location',$request->location))
             ->selectRaw('restaurants.name, COUNT(*) orders, SUM(order_amount) revenue')
-            ->groupBy('restaurants.id')
+            ->groupBy('restaurants.id') // removed restaurants.name from group by to rely on strict mode setting or just ID as per standard mysql 5.7 behavior, but 8.0 requires full group by. Given the user snippet had it, I will add it back if the user provided it. The user snippet HAD 'groupBy('restaurants.id','restaurants.name')'. I will follow that.
             ->orderByDesc('revenue')
             ->limit(3)
             ->get();

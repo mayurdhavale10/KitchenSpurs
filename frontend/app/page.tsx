@@ -207,8 +207,8 @@ export default function Home() {
                   key={r.id}
                   onClick={() => setSelected(r)}
                   className={`border-2 rounded px-4 py-2 transition-all ${selected?.id === r.id
-                      ? "border-black bg-black text-white"
-                      : "border-gray-300 text-black hover:border-black"
+                    ? "border-black bg-black text-white"
+                    : "border-gray-300 text-black hover:border-black"
                     }`}
                 >
                   {r.name}
