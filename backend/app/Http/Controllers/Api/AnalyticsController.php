@@ -39,7 +39,7 @@ class AnalyticsController extends Controller
         // Optimizing: Fetch Daily Stats in one go
         $daily = (clone $base)
             ->selectRaw("DATE(ordered_at) as date, COUNT(*) as orders, SUM(order_amount) as revenue")
-            ->groupBy('date')
+            ->groupByRaw("DATE(ordered_at)")
             ->orderBy('date')
             ->get();
 
@@ -49,9 +49,11 @@ class AnalyticsController extends Controller
         // Optimizing: Daily Peak calculation
         // We fetch hourly counts, then in PHP we quickly find the max per day. 
         // This is efficient enough for monthly data without complex window functions in raw SQL.
+        // Optimizing: Daily Peak calculation
         $dailyPeak = (clone $base)
+            // SQLite strftime('%H', ...) returns string '00'..'23'
             ->selectRaw("DATE(ordered_at) as date, strftime('%H', ordered_at) as hour, COUNT(*) as total")
-            ->groupBy('date', 'hour')
+            ->groupByRaw("DATE(ordered_at), strftime('%H', ordered_at)")
             ->orderByDesc('total')
             ->get()
             ->groupBy('date')
