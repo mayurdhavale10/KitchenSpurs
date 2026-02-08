@@ -3,44 +3,84 @@
 import {
     LineChart,
     Line,
-    BarChart,
-    Bar,
     XAxis,
     YAxis,
+    CartesianGrid,
     Tooltip,
     ResponsiveContainer,
+    Legend,
 } from "recharts";
 
-export default function TrendsChart({ data }: any) {
+type Props = {
+    data: {
+        date: string;
+        orders: number;
+        revenue: string;
+    }[];
+};
+
+export default function TrendsChart({ data }: Props) {
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-            {/* Revenue */}
-            <div className="border rounded p-4">
-                <h3 className="font-semibold mb-2">Daily Revenue</h3>
+        <div
+            style={{
+                marginTop: 30,
+                padding: 20,
+                border: "1px solid #e5e7eb",
+                borderRadius: 12,
+                background: "#fff",
+            }}
+        >
+            <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 20 }}>
+                Daily Orders & Revenue
+            </h3>
 
-                <ResponsiveContainer width="100%" height={250}>
-                    <LineChart data={data}>
-                        <XAxis dataKey="date" />
-                        <YAxis />
-                        <Tooltip />
-                        <Line type="monotone" dataKey="revenue" />
-                    </LineChart>
-                </ResponsiveContainer>
-            </div>
+            <ResponsiveContainer width="100%" height={350}>
+                <LineChart data={data}>
+                    <CartesianGrid strokeDasharray="3 3" />
 
-            {/* Orders */}
-            <div className="border rounded p-4">
-                <h3 className="font-semibold mb-2">Daily Orders</h3>
+                    <XAxis dataKey="date" />
 
-                <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={data}>
-                        <XAxis dataKey="date" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="orders" />
-                    </BarChart>
-                </ResponsiveContainer>
-            </div>
+                    {/* Left Y Axis — Orders */}
+                    <YAxis yAxisId="left" />
+
+                    {/* Right Y Axis — Revenue */}
+                    <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        tickFormatter={(v) => `₹${v}`}
+                    />
+
+                    <Tooltip
+                        formatter={(value, name) =>
+                            name === "revenue"
+                                ? [`₹${value}`, "Revenue"]
+                                : [value, "Orders"]
+                        }
+                    />
+
+                    <Legend />
+
+                    <Line
+                        yAxisId="left"
+                        type="monotone"
+                        dataKey="orders"
+                        stroke="#0f172a"
+                        strokeWidth={2}
+                        dot={{ r: 4 }}
+                        name="Orders"
+                    />
+
+                    <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="revenue"
+                        stroke="#2563eb"
+                        strokeWidth={2}
+                        dot={{ r: 4 }}
+                        name="Revenue"
+                    />
+                </LineChart>
+            </ResponsiveContainer>
         </div>
     );
 }
