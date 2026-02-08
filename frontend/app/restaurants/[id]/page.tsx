@@ -352,14 +352,6 @@ export default function RestaurantPage() {
                             </div>
                         </div>
 
-                        {/* LINE CHART */}
-                        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-                            <h2 className="text-xl font-semibold mb-4 text-black">
-                                Orders & Revenue Trend
-                            </h2>
-                            <TrendsChart data={data.daily} />
-                        </div>
-
                         {/* FILTERED ORDERS LIST */}
                         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
                             <h3 className="text-xl font-semibold mb-4 text-black">
@@ -397,6 +389,14 @@ export default function RestaurantPage() {
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+
+                        {/* LINE CHART */}
+                        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+                            <h2 className="text-xl font-semibold mb-4 text-black">
+                                Daily Orders & Revenue
+                            </h2>
+                            <TrendsChart data={data.daily} />
                         </div>
 
                         {/* DAILY PEAK HOURS */}
