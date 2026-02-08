@@ -22,38 +22,45 @@ class AnalyticsController extends Controller
         $startHour = $request->start_hour;
         $endHour = $request->end_hour;
 
+        // Base Query with SQLite compatible date functions
         $base = DB::table('orders')
-            ->join('restaurants','orders.restaurant_id','=','restaurants.id')
-            ->where('restaurants.id',$id)
-            ->whereBetween('ordered_at',[$from,$to])
-            ->when($search,fn($q)=>$q->where('restaurants.name','like',"%$search%"))
-            ->when($cuisine,fn($q)=>$q->where('restaurants.cuisine',$cuisine))
-            ->when($location,fn($q)=>$q->where('restaurants.location',$location))
-            ->when($minAmount,fn($q)=>$q->where('order_amount','>=',$minAmount))
-            ->when($maxAmount,fn($q)=>$q->where('order_amount','<=',$maxAmount))
-            ->when($startHour!==null,fn($q)=>$q->whereRaw('HOUR(ordered_at)>=?',[$startHour]))
-            ->when($endHour!==null,fn($q)=>$q->whereRaw('HOUR(ordered_at)<=?',[$endHour]));
+            ->join('restaurants', 'orders.restaurant_id', '=', 'restaurants.id')
+            ->where('restaurants.id', $id)
+            ->whereBetween('ordered_at', [$from, $to])
+            ->when($search, fn($q) => $q->where('restaurants.name', 'like', "%$search%"))
+            ->when($cuisine, fn($q) => $q->where('restaurants.cuisine', $cuisine))
+            ->when($location, fn($q) => $q->where('restaurants.location', $location))
+            ->when($minAmount, fn($q) => $q->where('order_amount', '>=', $minAmount))
+            ->when($maxAmount, fn($q) => $q->where('order_amount', '<=', $maxAmount))
+            // SQLite uses strftime for hour extraction
+            ->when($startHour !== null, fn($q) => $q->whereRaw("CAST(strftime('%H', ordered_at) AS INTEGER) >= ?", [$startHour]))
+            ->when($endHour !== null, fn($q) => $q->whereRaw("CAST(strftime('%H', ordered_at) AS INTEGER) <= ?", [$endHour]));
 
+        // Optimizing: Fetch Daily Stats in one go
         $daily = (clone $base)
-            ->selectRaw('DATE(ordered_at) date, COUNT(*) orders, SUM(order_amount) revenue')
+            ->selectRaw("DATE(ordered_at) as date, COUNT(*) as orders, SUM(order_amount) as revenue")
             ->groupBy('date')
             ->orderBy('date')
             ->get();
 
+        // Optimizing: Calculate Average directly
         $avg = (clone $base)->avg('order_amount');
 
+        // Optimizing: Daily Peak calculation
+        // We fetch hourly counts, then in PHP we quickly find the max per day. 
+        // This is efficient enough for monthly data without complex window functions in raw SQL.
         $dailyPeak = (clone $base)
-            ->selectRaw('DATE(ordered_at) date, HOUR(ordered_at) hour, COUNT(*) total')
-            ->groupBy('date','hour')
+            ->selectRaw("DATE(ordered_at) as date, strftime('%H', ordered_at) as hour, COUNT(*) as total")
+            ->groupBy('date', 'hour')
             ->orderByDesc('total')
             ->get()
             ->groupBy('date')
-            ->map(fn($d)=>$d->first());
+            ->map(fn($d) => $d->first()); // Taking the first (highest) since we ordered by total desc
 
         return response()->json([
-            'daily'=>$daily,
-            'average_order_value'=>round($avg,2),
-            'daily_peak_hours'=>$dailyPeak
+            'daily' => $daily,
+            'average_order_value' => round($avg, 2),
+            'daily_peak_hours' => $dailyPeak
         ]);
     }
 
