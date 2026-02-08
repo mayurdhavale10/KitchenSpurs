@@ -71,25 +71,31 @@ export default function RestaurantPage() {
         setLoading(true);
         setError(null);
 
-        const analyticsParams = {
+        // Build params object - only include non-empty values
+        const analyticsParams: any = {
             from,
             to,
-            min_amount: minAmount,
-            max_amount: maxAmount,
-            start_hour: startHour,
-            end_hour: endHour,
         };
+
+        // Only add filter params if they have values
+        if (minAmount) analyticsParams.min_amount = minAmount;
+        if (maxAmount) analyticsParams.max_amount = maxAmount;
+        if (startHour) analyticsParams.start_hour = startHour;
+        if (endHour) analyticsParams.end_hour = endHour;
+
+        console.log("Loading analytics with params:", analyticsParams);
 
         api
             .get(`/restaurants/${id}/trends`, {
                 params: analyticsParams,
             })
             .then((res) => {
+                console.log("Analytics response:", res.data);
                 setData(res.data);
             })
             .catch((err) => {
                 setError("Failed to load analytics");
-                console.error(err);
+                console.error("Analytics error:", err);
             })
             .finally(() => {
                 setLoading(false);
@@ -103,6 +109,29 @@ export default function RestaurantPage() {
     const totalOrders = data?.daily.reduce((sum, d) => sum + d.orders, 0) ?? 0;
     const totalRevenue =
         data?.daily.reduce((sum, d) => sum + Number(d.revenue), 0) ?? 0;
+
+    const handleApplyFilters = () => {
+        console.log("Applying filters:", {
+            minAmount,
+            maxAmount,
+            startHour,
+            endHour,
+            from,
+            to,
+        });
+        loadAnalytics();
+    };
+
+    const handleResetFilters = () => {
+        setMinAmount("");
+        setMaxAmount("");
+        setStartHour("");
+        setEndHour("");
+        setFrom("2025-06-22");
+        setTo("2025-06-28");
+        // Reload analytics after reset
+        setTimeout(() => loadAnalytics(), 100);
+    };
 
     return (
         <main className="min-h-screen bg-[#FAF9F6]">
@@ -152,86 +181,125 @@ export default function RestaurantPage() {
                     </div>
 
                     {showFilters && (
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 transition-all duration-300">
-                            <div className="flex flex-col">
-                                <label className="text-xs text-gray-500 mb-1">
-                                    Min Order (₹)
-                                </label>
-                                <input
-                                    type="number"
-                                    className="border border-gray-300 rounded px-4 py-2 text-black"
-                                    placeholder="0"
-                                    value={minAmount}
-                                    onChange={(e) => setMinAmount(e.target.value)}
-                                />
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                                <div className="flex flex-col">
+                                    <label className="text-xs text-gray-500 mb-1">
+                                        Min Order (₹)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className="border border-gray-300 rounded px-4 py-2 text-black focus:border-black focus:outline-none"
+                                        placeholder="200"
+                                        value={minAmount}
+                                        onChange={(e) => setMinAmount(e.target.value)}
+                                    />
+                                </div>
+
+                                <div className="flex flex-col">
+                                    <label className="text-xs text-gray-500 mb-1">
+                                        Max Order (₹)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className="border border-gray-300 rounded px-4 py-2 text-black focus:border-black focus:outline-none"
+                                        placeholder="1000"
+                                        value={maxAmount}
+                                        onChange={(e) => setMaxAmount(e.target.value)}
+                                    />
+                                </div>
+
+                                <div className="flex flex-col">
+                                    <label className="text-xs text-gray-500 mb-1">
+                                        Start Hour
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className="border border-gray-300 rounded px-4 py-2 text-black focus:border-black focus:outline-none"
+                                        placeholder="0-23"
+                                        min="0"
+                                        max="23"
+                                        value={startHour}
+                                        onChange={(e) => setStartHour(e.target.value)}
+                                    />
+                                </div>
+
+                                <div className="flex flex-col">
+                                    <label className="text-xs text-gray-500 mb-1">End Hour</label>
+                                    <input
+                                        type="number"
+                                        className="border border-gray-300 rounded px-4 py-2 text-black focus:border-black focus:outline-none"
+                                        placeholder="0-23"
+                                        min="0"
+                                        max="23"
+                                        value={endHour}
+                                        onChange={(e) => setEndHour(e.target.value)}
+                                    />
+                                </div>
+
+                                <div className="flex flex-col">
+                                    <label className="text-xs text-gray-500 mb-1">From Date</label>
+                                    <input
+                                        type="date"
+                                        className="border border-gray-300 rounded px-4 py-2 text-black focus:border-black focus:outline-none"
+                                        value={from}
+                                        onChange={(e) => setFrom(e.target.value)}
+                                    />
+                                </div>
+
+                                <div className="flex flex-col">
+                                    <label className="text-xs text-gray-500 mb-1">To Date</label>
+                                    <input
+                                        type="date"
+                                        className="border border-gray-300 rounded px-4 py-2 text-black focus:border-black focus:outline-none"
+                                        value={to}
+                                        onChange={(e) => setTo(e.target.value)}
+                                    />
+                                </div>
                             </div>
 
-                            <div className="flex flex-col">
-                                <label className="text-xs text-gray-500 mb-1">
-                                    Max Order (₹)
-                                </label>
-                                <input
-                                    type="number"
-                                    className="border border-gray-300 rounded px-4 py-2 text-black"
-                                    placeholder="10000"
-                                    value={maxAmount}
-                                    onChange={(e) => setMaxAmount(e.target.value)}
-                                />
-                            </div>
-
-                            <div className="flex flex-col">
-                                <label className="text-xs text-gray-500 mb-1">Start Hour</label>
-                                <input
-                                    type="number"
-                                    className="border border-gray-300 rounded px-4 py-2 text-black"
-                                    placeholder="0-23"
-                                    min="0"
-                                    max="23"
-                                    value={startHour}
-                                    onChange={(e) => setStartHour(e.target.value)}
-                                />
-                            </div>
-
-                            <div className="flex flex-col">
-                                <label className="text-xs text-gray-500 mb-1">End Hour</label>
-                                <input
-                                    type="number"
-                                    className="border border-gray-300 rounded px-4 py-2 text-black"
-                                    placeholder="0-23"
-                                    min="0"
-                                    max="23"
-                                    value={endHour}
-                                    onChange={(e) => setEndHour(e.target.value)}
-                                />
-                            </div>
-
-                            <div className="flex flex-col">
-                                <label className="text-xs text-gray-500 mb-1">From Date</label>
-                                <input
-                                    type="date"
-                                    className="border border-gray-300 rounded px-4 py-2 text-black"
-                                    value={from}
-                                    onChange={(e) => setFrom(e.target.value)}
-                                />
-                            </div>
-
-                            <div className="flex flex-col">
-                                <label className="text-xs text-gray-500 mb-1">To Date</label>
-                                <input
-                                    type="date"
-                                    className="border border-gray-300 rounded px-4 py-2 text-black"
-                                    value={to}
-                                    onChange={(e) => setTo(e.target.value)}
-                                />
-                            </div>
-
-                            <div className="flex items-end col-span-2 md:col-span-3 lg:col-span-6">
+                            {/* Action Buttons */}
+                            <div className="flex gap-4">
                                 <button
-                                    onClick={loadAnalytics}
-                                    className="w-full bg-black text-white rounded px-6 py-2 hover:bg-gray-800 transition-colors h-[42px]"
+                                    onClick={handleApplyFilters}
+                                    className="flex-1 bg-black text-white rounded px-6 py-2 hover:bg-gray-800 transition-colors font-medium"
                                 >
                                     Apply Filters
                                 </button>
+                                <button
+                                    onClick={handleResetFilters}
+                                    className="flex-1 bg-gray-200 text-black rounded px-6 py-2 hover:bg-gray-300 transition-colors font-medium"
+                                >
+                                    Reset Filters
+                                </button>
+                            </div>
+
+                            {/* Active Filters Display */}
+                            <div className="flex flex-wrap gap-2 pt-2 border-t">
+                                <span className="text-sm text-gray-600 font-medium">Active filters:</span>
+                                {minAmount && (
+                                    <span className="bg-gray-100 px-3 py-1 rounded text-sm">
+                                        Min: ₹{minAmount}
+                                    </span>
+                                )}
+                                {maxAmount && (
+                                    <span className="bg-gray-100 px-3 py-1 rounded text-sm">
+                                        Max: ₹{maxAmount}
+                                    </span>
+                                )}
+                                {startHour && (
+                                    <span className="bg-gray-100 px-3 py-1 rounded text-sm">
+                                        From: {startHour}:00
+                                    </span>
+                                )}
+                                {endHour && (
+                                    <span className="bg-gray-100 px-3 py-1 rounded text-sm">
+                                        To: {endHour}:00
+                                    </span>
+                                )}
+                                <span className="bg-black text-white px-3 py-1 rounded text-sm">
+                                    {from} to {to}
+                                </span>
                             </div>
                         </div>
                     )}
@@ -249,7 +317,7 @@ export default function RestaurantPage() {
                     </div>
                 )}
 
-                {data && (
+                {!loading && data && (
                     <>
                         {/* KPI CARDS */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
