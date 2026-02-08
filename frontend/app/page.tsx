@@ -63,9 +63,37 @@ export default function Home() {
       });
   };
 
+  const loadTopRestaurants = () => {
+    const analyticsParams = {
+      from,
+      to,
+      search,
+      cuisine,
+      location,
+      min_amount: minAmount,
+      max_amount: maxAmount,
+      start_hour: startHour,
+      end_hour: endHour,
+    };
+
+    api
+      .get(`/top-restaurants`, {
+        params: analyticsParams,
+      })
+      .then((res) => {
+        setTop(Array.isArray(res.data) ? res.data : []);
+      })
+      .catch((err) => console.error("Top restaurants error:", err));
+  };
+
   useEffect(() => {
     loadRestaurants();
   }, [search, cuisine, location, page]);
+
+  // Load top restaurants on initial mount
+  useEffect(() => {
+    loadTopRestaurants();
+  }, []);
 
   const loadAnalytics = () => {
     if (!selected) return;
@@ -91,14 +119,8 @@ export default function Home() {
       })
       .catch((err) => console.error("Trends error:", err));
 
-    api
-      .get(`/top-restaurants`, {
-        params: analyticsParams,
-      })
-      .then((res) => {
-        setTop(Array.isArray(res.data) ? res.data : []);
-      })
-      .catch((err) => console.error("Top restaurants error:", err));
+    // Reload top restaurants when filters are applied
+    loadTopRestaurants();
   };
 
   useEffect(() => {
@@ -251,7 +273,9 @@ export default function Home() {
                 <input
                   type="number"
                   className="border border-gray-300 rounded px-4 py-2 text-black"
-                  placeholder="0-24"
+                  placeholder="0-23"
+                  min="0"
+                  max="23"
                   value={startHour}
                   onChange={(e) => setStartHour(e.target.value)}
                 />
@@ -262,7 +286,9 @@ export default function Home() {
                 <input
                   type="number"
                   className="border border-gray-300 rounded px-4 py-2 text-black"
-                  placeholder="0-24"
+                  placeholder="0-23"
+                  min="0"
+                  max="23"
                   value={endHour}
                   onChange={(e) => setEndHour(e.target.value)}
                 />
@@ -300,7 +326,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* KPIs */}
+        {/* KPIs - Only show when restaurant is selected */}
         {trends && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -365,7 +391,7 @@ export default function Home() {
           </>
         )}
 
-        {/* Top Restaurants */}
+        {/* Top Restaurants - Always visible */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold mb-4 text-black">
             Top Restaurants
@@ -380,7 +406,7 @@ export default function Home() {
                 </tr>
               </thead>
               <tbody className="text-black">
-                {Array.isArray(top) &&
+                {Array.isArray(top) && top.length > 0 ? (
                   top.map((r, i) => (
                     <tr key={i} className="border-b hover:bg-gray-50">
                       <td className="px-6 py-4">{r.name}</td>
@@ -389,7 +415,14 @@ export default function Home() {
                         ₹{Number(r.revenue).toFixed(0)}
                       </td>
                     </tr>
-                  ))}
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={3} className="px-6 py-8 text-center text-gray-500">
+                      Loading top restaurants...
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

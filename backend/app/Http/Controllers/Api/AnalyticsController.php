@@ -10,8 +10,9 @@ class AnalyticsController extends Controller
 {
     public function restaurantTrends(Request $request, $id)
     {
+        // Fix: Date must include the entire end day (23:59:59)
         $from = $request->from;
-        $to = $request->to;
+        $to = $request->to ? $request->to . ' 23:59:59' : null;
 
         $search = $request->search;
         $cuisine = $request->cuisine;
@@ -22,6 +23,7 @@ class AnalyticsController extends Controller
         $startHour = $request->start_hour;
         $endHour = $request->end_hour;
 
+        // Base Query with ALL filters
         $base = DB::table('orders')
             ->join('restaurants','orders.restaurant_id','=','restaurants.id')
             ->where('restaurants.id',$id)
@@ -29,8 +31,8 @@ class AnalyticsController extends Controller
             ->when($search, fn($q)=>$q->where('restaurants.name','like',"%$search%"))
             ->when($cuisine, fn($q)=>$q->where('restaurants.cuisine',$cuisine))
             ->when($location, fn($q)=>$q->where('restaurants.location',$location))
-            ->when($minAmount !== null && $minAmount !== '', fn($q)=>$q->where('order_amount','>=',$minAmount))
-            ->when($maxAmount !== null && $maxAmount !== '', fn($q)=>$q->where('order_amount','<=',$maxAmount))
+            ->when($minAmount, fn($q)=>$q->where('order_amount','>=',$minAmount))
+            ->when($maxAmount, fn($q)=>$q->where('order_amount','<=',$maxAmount))
             ->when($startHour !== null && $startHour !== '', fn($q)=>$q->whereRaw('HOUR(ordered_at) >= ?',[$startHour]))
             ->when($endHour !== null && $endHour !== '', fn($q)=>$q->whereRaw('HOUR(ordered_at) <= ?',[$endHour]));
 
@@ -59,12 +61,21 @@ class AnalyticsController extends Controller
 
     public function topRestaurants(Request $request)
     {
+        // Fix: Date must include the entire end day
+        $to = $request->to ? $request->to . ' 23:59:59' : null;
+
         return DB::table('orders')
             ->join('restaurants','orders.restaurant_id','=','restaurants.id')
-            ->whereBetween('ordered_at',[$request->from,$request->to])
+            ->whereBetween('ordered_at',[$request->from, $to])
             ->when($request->location,fn($q)=>$q->where('restaurants.location',$request->location))
+            ->when($request->search, fn($q)=>$q->where('restaurants.name','like',"%$request->search%"))
+            ->when($request->cuisine, fn($q)=>$q->where('restaurants.cuisine',$request->cuisine))
+            ->when($request->min_amount, fn($q)=>$q->where('order_amount','>=',$request->min_amount))
+            ->when($request->max_amount, fn($q)=>$q->where('order_amount','<=',$request->max_amount))
+            ->when($request->start_hour, fn($q)=>$q->whereRaw('HOUR(ordered_at) >= ?',[$request->start_hour]))
+            ->when($request->end_hour, fn($q)=>$q->whereRaw('HOUR(ordered_at) <= ?',[$request->end_hour]))
             ->selectRaw('restaurants.name, COUNT(*) orders, SUM(order_amount) revenue')
-            ->groupBy('restaurants.id') // removed restaurants.name from group by to rely on strict mode setting or just ID as per standard mysql 5.7 behavior, but 8.0 requires full group by. Given the user snippet had it, I will add it back if the user provided it. The user snippet HAD 'groupBy('restaurants.id','restaurants.name')'. I will follow that.
+            ->groupBy('restaurants.id', 'restaurants.name')
             ->orderByDesc('revenue')
             ->limit(3)
             ->get();
