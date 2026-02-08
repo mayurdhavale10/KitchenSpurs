@@ -10,6 +10,7 @@ class AnalyticsController extends Controller
 {
     public function restaurantTrends(Request $request, $id)
     {
+        DB::enableQueryLog();
         // Fix: Date must include the entire end day (23:59:59)
         $from = $request->from;
         $to = $request->to ? $request->to . ' 23:59:59' : null;
@@ -52,10 +53,20 @@ class AnalyticsController extends Controller
             ->groupBy('date')
             ->map(fn($d)=>$d->first());
 
+        // Get actual list of orders for the table
+        $filteredOrders = (clone $base)
+            ->select('orders.id', 'orders.order_amount', 'orders.ordered_at')
+            ->orderByDesc('ordered_at')
+            ->limit(50)
+            ->get();
+
+        \Illuminate\Support\Facades\Log::info(DB::getQueryLog());
+        
         return response()->json([
             'daily'=>$daily,
             'average_order_value'=>round($avg,2),
-            'daily_peak_hours'=>$dailyPeak
+            'daily_peak_hours'=>$dailyPeak,
+            'filtered_orders' => $filteredOrders
         ]);
     }
 

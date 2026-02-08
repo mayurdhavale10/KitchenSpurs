@@ -30,6 +30,11 @@ type AnalyticsResponse = {
             total: number;
         }
     >;
+    filtered_orders: {
+        id: number;
+        order_amount: number;
+        ordered_at: string;
+    }[];
 };
 
 export default function RestaurantPage() {
@@ -353,6 +358,45 @@ export default function RestaurantPage() {
                                 Orders & Revenue Trend
                             </h2>
                             <TrendsChart data={data.daily} />
+                        </div>
+
+                        {/* FILTERED ORDERS LIST */}
+                        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+                            <h3 className="text-xl font-semibold mb-4 text-black">
+                                Recent Filtered Orders
+                            </h3>
+                            <div className="overflow-x-auto max-h-96">
+                                <table className="w-full">
+                                    <thead className="bg-black text-white sticky top-0">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left">Order ID</th>
+                                            <th className="px-6 py-3 text-left">Amount</th>
+                                            <th className="px-6 py-3 text-left">Date & Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="text-black">
+                                        {data.filtered_orders?.length > 0 ? (
+                                            data.filtered_orders.map((order) => (
+                                                <tr key={order.id} className="border-b hover:bg-gray-50">
+                                                    <td className="px-6 py-4">#{order.id}</td>
+                                                    <td className="px-6 py-4 font-medium">
+                                                        ₹{order.order_amount}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-gray-600">
+                                                        {new Date(order.ordered_at).toLocaleString()}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan={3} className="px-6 py-8 text-center text-gray-500">
+                                                    No orders found matching these filters.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
                         {/* DAILY PEAK HOURS */}
