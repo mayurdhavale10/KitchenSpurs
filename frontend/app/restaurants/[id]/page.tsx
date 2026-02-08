@@ -40,34 +40,64 @@ export default function RestaurantPage() {
     const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showFilters, setShowFilters] = useState(false);
 
-    const from = "2025-06-22";
-    const to = "2025-06-28";
+    // Filter states
+    const [minAmount, setMinAmount] = useState("");
+    const [maxAmount, setMaxAmount] = useState("");
+    const [startHour, setStartHour] = useState("");
+    const [endHour, setEndHour] = useState("");
+    const [from, setFrom] = useState("2025-06-22");
+    const [to, setTo] = useState("2025-06-28");
 
     useEffect(() => {
         if (!id) return;
 
-        async function load() {
-            setLoading(true);
-            setError(null);
-
+        async function loadRestaurant() {
             try {
-                const [restaurantRes, analyticsRes] = await Promise.all([
-                    api.get(`/restaurants/${id}`),
-                    api.get(`/restaurants/${id}/trends`, { params: { from, to } }),
-                ]);
-
+                const restaurantRes = await api.get(`/restaurants/${id}`);
                 setRestaurant(restaurantRes.data);
-                setData(analyticsRes.data);
             } catch (err) {
-                setError("Failed to load analytics");
-                console.error(err);
-            } finally {
-                setLoading(false);
+                console.error("Failed to load restaurant:", err);
             }
         }
 
-        load();
+        loadRestaurant();
+    }, [id]);
+
+    const loadAnalytics = () => {
+        if (!id) return;
+
+        setLoading(true);
+        setError(null);
+
+        const analyticsParams = {
+            from,
+            to,
+            min_amount: minAmount,
+            max_amount: maxAmount,
+            start_hour: startHour,
+            end_hour: endHour,
+        };
+
+        api
+            .get(`/restaurants/${id}/trends`, {
+                params: analyticsParams,
+            })
+            .then((res) => {
+                setData(res.data);
+            })
+            .catch((err) => {
+                setError("Failed to load analytics");
+                console.error(err);
+            })
+            .finally(() => {
+                setLoading(false);
+            });
+    };
+
+    useEffect(() => {
+        loadAnalytics();
     }, [id]);
 
     const totalOrders = data?.daily.reduce((sum, d) => sum + d.orders, 0) ?? 0;
@@ -108,6 +138,104 @@ export default function RestaurantPage() {
                     <span className="text-xl">←</span>
                     <span>Back to Dashboard</span>
                 </button>
+
+                {/* Filters Section */}
+                <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-semibold text-black">Filters</h2>
+                        <button
+                            onClick={() => setShowFilters(!showFilters)}
+                            className="text-black hover:text-gray-700 underline focus:outline-none"
+                        >
+                            {showFilters ? "Hide Filters" : "Show Filters"}
+                        </button>
+                    </div>
+
+                    {showFilters && (
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 transition-all duration-300">
+                            <div className="flex flex-col">
+                                <label className="text-xs text-gray-500 mb-1">
+                                    Min Order (₹)
+                                </label>
+                                <input
+                                    type="number"
+                                    className="border border-gray-300 rounded px-4 py-2 text-black"
+                                    placeholder="0"
+                                    value={minAmount}
+                                    onChange={(e) => setMinAmount(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="flex flex-col">
+                                <label className="text-xs text-gray-500 mb-1">
+                                    Max Order (₹)
+                                </label>
+                                <input
+                                    type="number"
+                                    className="border border-gray-300 rounded px-4 py-2 text-black"
+                                    placeholder="10000"
+                                    value={maxAmount}
+                                    onChange={(e) => setMaxAmount(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="flex flex-col">
+                                <label className="text-xs text-gray-500 mb-1">Start Hour</label>
+                                <input
+                                    type="number"
+                                    className="border border-gray-300 rounded px-4 py-2 text-black"
+                                    placeholder="0-23"
+                                    min="0"
+                                    max="23"
+                                    value={startHour}
+                                    onChange={(e) => setStartHour(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="flex flex-col">
+                                <label className="text-xs text-gray-500 mb-1">End Hour</label>
+                                <input
+                                    type="number"
+                                    className="border border-gray-300 rounded px-4 py-2 text-black"
+                                    placeholder="0-23"
+                                    min="0"
+                                    max="23"
+                                    value={endHour}
+                                    onChange={(e) => setEndHour(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="flex flex-col">
+                                <label className="text-xs text-gray-500 mb-1">From Date</label>
+                                <input
+                                    type="date"
+                                    className="border border-gray-300 rounded px-4 py-2 text-black"
+                                    value={from}
+                                    onChange={(e) => setFrom(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="flex flex-col">
+                                <label className="text-xs text-gray-500 mb-1">To Date</label>
+                                <input
+                                    type="date"
+                                    className="border border-gray-300 rounded px-4 py-2 text-black"
+                                    value={to}
+                                    onChange={(e) => setTo(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="flex items-end col-span-2 md:col-span-3 lg:col-span-6">
+                                <button
+                                    onClick={loadAnalytics}
+                                    className="w-full bg-black text-white rounded px-6 py-2 hover:bg-gray-800 transition-colors h-[42px]"
+                                >
+                                    Apply Filters
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
 
                 {loading && (
                     <div className="bg-white rounded-lg shadow-md p-8 text-center">
