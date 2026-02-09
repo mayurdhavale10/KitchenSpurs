@@ -36,9 +36,6 @@ export default function Home() {
   const [startHour, setStartHour] = useState("");
   const [endHour, setEndHour] = useState("");
 
-  // pagination
-  const [page, setPage] = useState(1);
-
   // dates
   const [from, setFrom] = useState("2025-06-22");
   const [to, setTo] = useState("2025-06-28");
@@ -50,7 +47,6 @@ export default function Home() {
           search,
           cuisine,
           location,
-          page,
         },
       })
       .then((res) => {
@@ -88,7 +84,7 @@ export default function Home() {
 
   useEffect(() => {
     loadRestaurants();
-  }, [search, cuisine, location, page]);
+  }, [search, cuisine, location]);
 
   // Load top restaurants on initial mount
   useEffect(() => {
@@ -158,10 +154,10 @@ export default function Home() {
             <h1 className="text-3xl font-bold">Kitchen Spurs Analytics</h1>
           </div>
 
-          {/* Restaurant Selection - Moved to Header */}
+          {/* Restaurant Selection */}
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
             <h2 className="text-lg font-semibold mb-3">Select Restaurant</h2>
-            <div className="flex flex-wrap gap-2 mb-3">
+            <div className="flex flex-wrap gap-2">
               {Array.isArray(restaurants) &&
                 restaurants.map((r) => (
                   <button
@@ -175,23 +171,6 @@ export default function Home() {
                     {r.name}
                   </button>
                 ))}
-            </div>
-
-            {/* Pagination */}
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="border border-white/30 rounded px-4 py-2 text-white hover:border-white hover:bg-white/20 transition-all"
-              >
-                Prev
-              </button>
-              <span className="text-white">Page {page}</span>
-              <button
-                onClick={() => setPage((p) => p + 1)}
-                className="border border-white/30 rounded px-4 py-2 text-white hover:border-white hover:bg-white/20 transition-all"
-              >
-                Next
-              </button>
             </div>
           </div>
         </div>
